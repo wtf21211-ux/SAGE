@@ -37,7 +37,6 @@ class ChatRequest(BaseModel):
     profile_context: str = ""
     history: list = []
 
-# เสิร์ฟหน้าเว็บ HTML ตรงนี้เลย จะได้ไม่ต้องกังวลเรื่องพาร์ทหลุด
 @app.get("/", response_class=HTMLResponse)
 def serve_frontend():
     return """<!DOCTYPE html>
@@ -271,7 +270,6 @@ def serve_frontend():
             };
 
             try {
-                const res = await window.location.origin + '/generate-plan';
                 const fetchRes = await fetch('/generate-plan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -438,5 +436,5 @@ def chat_with_sage(req: ChatRequest):
             max_tokens=1024
         )
         return {"reply": completion.choices[0].message.content}
-        except Exception as e:
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
