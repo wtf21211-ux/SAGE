@@ -7,16 +7,15 @@ from pydantic import BaseModel
 import os
 import json
 
+# สร้างตัวแปร app ให้ตรงตามมาตรฐานที่ Vercel มองหา
 app = FastAPI()
 
-# เปิด CORS เพื่อให้ GitHub Pages ยิงข้ามมาหา Vercel ได้
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # หรือระบุเฉพาะเจาะจง เช่น ["https://wtf21211-ux.github.io"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-],
 )
 
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
