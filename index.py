@@ -36,8 +36,8 @@ class ChatRequest(BaseModel):
     profile_context: str = ""
     history: list = []
 
+# ใช้เส้นทางตรงๆ แบบไม่มี /api/ นำหน้า เพราะรันเดี่ยวๆ บน Render แล้ว
 @app.post("/generate-plan")
-@app.post("/api/generate-plan")
 def generate_initial_plan(req: OnboardingRequest):
     current_time = get_thai_time()
     prompt = f"""
@@ -59,7 +59,6 @@ def generate_initial_plan(req: OnboardingRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat")
-@app.post("/api/chat")
 def chat_with_sage(req: ChatRequest):
     current_time = get_thai_time()
     try:
@@ -75,4 +74,8 @@ def chat_with_sage(req: ChatRequest):
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+# บรรทัดสั่งรัน Uvicorn สำหรับให้ Render เรียกใช้งาน
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
