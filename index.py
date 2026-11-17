@@ -2,6 +2,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from groq import Groq
 from pydantic import BaseModel
 import os
@@ -36,7 +37,14 @@ class ChatRequest(BaseModel):
     profile_context: str = ""
     history: list = []
 
-# ใช้เส้นทางตรงๆ แบบไม่มี /api/ นำหน้า เพราะรันเดี่ยวๆ บน Render แล้ว
+# เพิ่ม Route นี้เพื่อให้กดเข้าลิงก์ Render แล้วเปิดหน้า index.html ขึ้นมาโชว์ทันที
+@app.get("/", response_class=HTMLResponse)
+def serve_frontend():
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>SAGE Backend is running! (ไม่พบไฟล์ index.html ในโฟลเดอร์หลัก)</h1>"
+
 @app.post("/generate-plan")
 def generate_initial_plan(req: OnboardingRequest):
     current_time = get_thai_time()
@@ -78,4 +86,5 @@ def chat_with_sage(req: ChatRequest):
 # บรรทัดสั่งรัน Uvicorn สำหรับให้ Render เรียกใช้งาน
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    uvicorn.run("index:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+                                                                           
