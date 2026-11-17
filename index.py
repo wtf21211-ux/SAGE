@@ -36,7 +36,6 @@ class ChatRequest(BaseModel):
     profile_context: str = ""
     history: list = []
 
-# รองรับทั้งแบบมี /api และไม่มี /api ป้องกันพังซ้ำซ้อน
 @app.post("/generate-plan")
 @app.post("/api/generate-plan")
 def generate_initial_plan(req: OnboardingRequest):
@@ -67,7 +66,7 @@ def generate_initial_plan(req: OnboardingRequest):
 
     try:
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen/qwen3.8-27b",  # เปลี่ยนมาใช้โมเดลตามที่ต้องการ
             messages=[
                 {"role": "system", "content": "คุณตอบกลับเป็น JSON ที่ถูกต้องตามโครงสร้างที่กำหนดเท่านั้น ห้ามมีข้อความอื่นปน"},
                 {"role": "user", "content": prompt}
@@ -101,7 +100,7 @@ def chat_with_sage(req: ChatRequest):
         messages.append({"role": "user", "content": req.message})
 
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen/qwen3.8-27b",  # ใช้โมเดลตัวเดียวกัน
             messages=messages,
             temperature=0.7,
             max_tokens=1024
@@ -109,4 +108,4 @@ def chat_with_sage(req: ChatRequest):
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        
+                    
