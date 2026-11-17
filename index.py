@@ -9,12 +9,14 @@ import json
 
 app = FastAPI()
 
+# เปิด CORS เพื่อให้ GitHub Pages ยิงข้ามมาหา Vercel ได้
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # หรือระบุเฉพาะเจาะจง เช่น ["https://wtf21211-ux.github.io"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+],
 )
 
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
@@ -106,3 +108,4 @@ def chat_with_sage(req: ChatRequest):
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        
