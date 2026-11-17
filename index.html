@@ -156,7 +156,7 @@
     </main>
 
     <script>
-        // ระบบนาฬิกาแยกอิสระ ปลอดภัยไม่โดนโค้ดอื่นบล็อก
+        // ระบบนาฬิกาแยกอิสระ
         (function() {
             function updateThaiTime() {
                 const timeEl = document.getElementById('time-text');
@@ -178,7 +178,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_T1UXpP2GYNYGWSm8hM6XCg_3rqtIx21';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // กำหนด Base URL ของ Vercel ตรงนี้ตามที่ต้องการ
+        // กำหนด Base URL ของ Vercel
         const VERCEL_BASE_URL = 'https://wtf-a335.vercel.app';
 
         let currentUser = null;
@@ -256,7 +256,6 @@
             };
 
             try {
-                // เชื่อมต่อ API ไปยังโดเมน Vercel ที่กำหนด
                 const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -342,7 +341,6 @@
             const profileContext = `ชื่อ: ${userPlanData.nickname}, เป้าหมาย: ${userPlanData.target_uni}, MBTI: ${userPlanData.mbti}`;
 
             try {
-                // เชื่อมต่อ API แชทไปยังโดเมน Vercel ที่กำหนด
                 const res = await fetch(`${VERCEL_BASE_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
