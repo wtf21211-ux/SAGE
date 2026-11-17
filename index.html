@@ -156,7 +156,6 @@
     </main>
 
     <script>
-        // ระบบนาฬิกาแยกอิสระ
         (function() {
             function updateThaiTime() {
                 const timeEl = document.getElementById('time-text');
@@ -178,8 +177,8 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_T1UXpP2GYNYGWSm8hM6XCg_3rqtIx21';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Base URL ของ Vercel
-        const VERCEL_BASE_URL = 'https://wtf-a335.vercel.app';
+        // โดเมน Vercel ของคุณ
+        const VERCEL_BASE_URL = 'https://sage-wtf-a335.vercel.app';
 
         let currentUser = null;
         let userPlanData = null;
@@ -243,56 +242,51 @@
         }
 
         async function submitOnboarding() {
-        async function submitOnboarding() {
-    const btn = document.getElementById('generate-btn');
-    btn.innerText = "⏳ SAGE กำลังวิเคราะห์และจัดตาราง...";
-    btn.disabled = true;
+            const btn = document.getElementById('generate-btn');
+            btn.innerText = "⏳ SAGE กำลังวิเคราะห์และจัดตาราง...";
+            btn.disabled = true;
 
-    // เก็บค่าจากฟอร์มให้ครบถ้วนตรงตาม OnboardingRequest ของ FastAPI
-    const payload = {
-        nickname: document.getElementById('ob-nickname').value,
-        target_uni: document.getElementById('ob-target').value,
-        mbti: document.getElementById('ob-mbti').value,
-        strengths_weaknesses: document.getElementById('ob-subjects').value,
-        study_style: document.getElementById('ob-style').value
-    };
+            const payload = {
+                nickname: document.getElementById('ob-nickname').value,
+                target_uni: document.getElementById('ob-target').value,
+                mbti: document.getElementById('ob-mbti').value,
+                strengths_weaknesses: document.getElementById('ob-subjects').value,
+                study_style: document.getElementById('ob-style').value
+            };
 
-    try {
-        // ยิงไปที่โดเมน Vercel จริงผ่านเส้นทาง /api/generate-plan
-        const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const aiData = await res.json();
+            try {
+                const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const aiData = await res.json();
 
-        if (!res.ok) {
-            throw new Error(aiData.detail || "เกิดข้อผิดพลาดในการประมวลผลจาก AI");
-        }
+                if (!res.ok) {
+                    throw new Error(aiData.detail || "เกิดข้อผิดพลาดในการประมวลผลจาก AI");
+                }
 
-        const newPlan = {
-            user_id: currentUser.id,
-            nickname: payload.nickname,
-            target_uni: payload.target_uni,
-            mbti: payload.mbti,
-            psych_summary: aiData.psych_summary,
-            long_term_plan: aiData.long_term_plan,
-            daily_tasks: aiData.daily_tasks
-        };
+                const newPlan = {
+                    user_id: currentUser.id,
+                    nickname: payload.nickname,
+                    target_uni: payload.target_uni,
+                    mbti: payload.mbti,
+                    psych_summary: aiData.psych_summary,
+                    long_term_plan: aiData.long_term_plan,
+                    daily_tasks: aiData.daily_tasks
+                };
 
-        await supabaseClient.from('user_plans').upsert(newPlan);
-        userPlanData = newPlan;
-        renderDashboard();
-        showView('dashboard-view');
-    } catch (err) {
-        alert("เกิดข้อผิดพลาด: " + err.message);
-    } finally {
-        btn.innerText = "✨ ให้ SAGE วิเคราะห์และสร้างแผนการเรียน";
-        btn.disabled = false;
-    }
-}
-
+                await supabaseClient.from('user_plans').upsert(newPlan);
+                userPlanData = newPlan;
+                renderDashboard();
+                showView('dashboard-view');
+            } catch (err) {
+                alert("เกิดข้อผิดพลาด: " + err.message);
+            } finally {
+                btn.innerText = "✨ ให้ SAGE วิเคราะห์และสร้างแผนการเรียน";
+                btn.disabled = false;
+            }
         }
 
         function resetOnboarding() { showView('onboarding-view'); }
@@ -351,7 +345,6 @@
             const profileContext = `ชื่อ: ${userPlanData.nickname}, เป้าหมาย: ${userPlanData.target_uni}, MBTI: ${userPlanData.mbti}`;
 
             try {
-                // ยิงผ่าน /api/chat ไปยังโฟลเดอร์ api/index.py ของ Vercel
                 const res = await fetch(`${VERCEL_BASE_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
