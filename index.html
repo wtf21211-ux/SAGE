@@ -177,7 +177,6 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_T1UXpP2GYNYGWSm8hM6XCg_3rqtIx21';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // เนื่องจากรันรวมอยู่บน Render โดเมนเดียวกัน ใช้ค่าว่างได้เลยครับ ระบบจะวิ่งเข้าเซิร์ฟเวอร์ตัวเองอัตโนมัติ
         const RENDER_BASE_URL = '';
 
         let currentUser = null;
@@ -230,10 +229,55 @@
             location.reload();
         }
 
+        // โหลดข้อมูลแผน พร้อมเช็กข้ามวัน หากขึ้นวันใหม่จะให้ AI สดใหม่สร้างภารกิจของวันนี้ให้ทันที
         async function loadUserPlan() {
             const { data } = await supabaseClient.from('user_plans').select('*').eq('user_id', currentUser.id).single();
             if (data && data.long_term_plan) {
                 userPlanData = data;
+
+                const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+
+                // ถ้าเปลี่ยนวันใหม่ ให้เรียก AI มาสร้างภารกิจรายวันชุดใหม่ให้ทันที
+                if (userPlanData.last_reset_date !== todayStr) {
+                    try {
+                        const payload = {
+                            nickname: userPlanData.nickname,
+                            target_uni: userPlanData.target_uni,
+                            mbti: userPlanData.mbti,
+                            strengths_weaknesses: userPlanData.strengths_weaknesses || "ทั่วไป",
+                            study_style: userPlanData.study_style || "ปกติ"
+                        };
+
+                        const res = await fetch(`${RENDER_BASE_URL}/generate-plan`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        const aiData = await res.json();
+
+                        if (res.ok && aiData.daily_tasks) {
+                            userPlanData.daily_tasks = aiData.daily_tasks;
+                            if (aiData.psych_summary) userPlanData.psych_summary = aiData.psych_summary;
+                        }
+                    } catch (e) {
+                        console.error("Failed to generate new daily tasks:", e);
+                        // ถ้าเรียก AI ไม่สำเร็จ ให้ใช้การเคลียร์สถานะติ๊กถูกแบบเดิมกันเว็บพัง
+                        if (userPlanData.daily_tasks) {
+                            userPlanData.daily_tasks.forEach(t => t.done = false);
+                        }
+                    }
+
+                    userPlanData.last_reset_date = todayStr;
+
+                    // บันทึกภารกิจใหม่และวันที่ล่าสุดลง Supabase
+                    await supabaseClient.from('user_plans').update({ 
+                        daily_tasks: userPlanData.daily_tasks,
+                        psych_summary: userPlanData.psych_summary,
+                        last_reset_date: todayStr 
+                    }).eq('user_id', currentUser.id);
+                }
+
                 renderDashboard();
                 showView('dashboard-view');
             } else {
@@ -245,6 +289,8 @@
             const btn = document.getElementById('generate-btn');
             btn.innerText = "⏳ SAGE กำลังวิเคราะห์และจัดตาราง...";
             btn.disabled = true;
+
+            const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
 
             const payload = {
                 nickname: document.getElementById('ob-nickname').value,
@@ -272,9 +318,12 @@
                     nickname: payload.nickname,
                     target_uni: payload.target_uni,
                     mbti: payload.mbti,
+                    strengths_weaknesses: payload.strengths_weaknesses,
+                    study_style: payload.study_style,
                     psych_summary: aiData.psych_summary,
                     long_term_plan: aiData.long_term_plan,
-                    daily_tasks: aiData.daily_tasks
+                    daily_tasks: aiData.daily_tasks,
+                    last_reset_date: todayStr
                 };
 
                 await supabaseClient.from('user_plans').upsert(newPlan);
