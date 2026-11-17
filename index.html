@@ -243,47 +243,56 @@
         }
 
         async function submitOnboarding() {
-            const btn = document.getElementById('generate-btn');
-            btn.innerText = "⏳ SAGE กำลังวิเคราะห์และจัดตาราง...";
-            btn.disabled = true;
+        async function submitOnboarding() {
+    const btn = document.getElementById('generate-btn');
+    btn.innerText = "⏳ SAGE กำลังวิเคราะห์และจัดตาราง...";
+    btn.disabled = true;
 
-            const payload = {
-                nickname: document.getElementById('ob-nickname').value,
-                target_uni: document.getElementById('ob-target').value,
-                mbti: document.getElementById('ob-mbti').value,
-                strengths_weaknesses: document.getElementById('ob-subjects').value,
-                study_style: document.getElementById('ob-style').value
-            };
+    // เก็บค่าจากฟอร์มให้ครบถ้วนตรงตาม OnboardingRequest ของ FastAPI
+    const payload = {
+        nickname: document.getElementById('ob-nickname').value,
+        target_uni: document.getElementById('ob-target').value,
+        mbti: document.getElementById('ob-mbti').value,
+        strengths_weaknesses: document.getElementById('ob-subjects').value,
+        study_style: document.getElementById('ob-style').value
+    };
 
-            try {
-                // ยิงผ่าน /api เพราะเราวางไฟล์ไว้ในโฟลเดอร์ api/index.py แล้ว
-                const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const aiData = await res.json();
+    try {
+        // ยิงไปที่โดเมน Vercel จริงผ่านเส้นทาง /api/generate-plan
+        const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const aiData = await res.json();
 
-                const newPlan = {
-                    user_id: currentUser.id,
-                    nickname: payload.nickname,
-                    target_uni: payload.target_uni,
-                    mbti: payload.mbti,
-                    psych_summary: aiData.psych_summary,
-                    long_term_plan: aiData.long_term_plan,
-                    daily_tasks: aiData.daily_tasks
-                };
+        if (!res.ok) {
+            throw new Error(aiData.detail || "เกิดข้อผิดพลาดในการประมวลผลจาก AI");
+        }
 
-                await supabaseClient.from('user_plans').upsert(newPlan);
-                userPlanData = newPlan;
-                renderDashboard();
-                showView('dashboard-view');
-            } catch (err) {
-                alert("เกิดข้อผิดพลาด: " + err.message);
-            } finally {
-                btn.innerText = "✨ ให้ SAGE วิเคราะห์และสร้างแผนการเรียน";
-                btn.disabled = false;
-            }
+        const newPlan = {
+            user_id: currentUser.id,
+            nickname: payload.nickname,
+            target_uni: payload.target_uni,
+            mbti: payload.mbti,
+            psych_summary: aiData.psych_summary,
+            long_term_plan: aiData.long_term_plan,
+            daily_tasks: aiData.daily_tasks
+        };
+
+        await supabaseClient.from('user_plans').upsert(newPlan);
+        userPlanData = newPlan;
+        renderDashboard();
+        showView('dashboard-view');
+    } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+    } finally {
+        btn.innerText = "✨ ให้ SAGE วิเคราะห์และสร้างแผนการเรียน";
+        btn.disabled = false;
+    }
+}
+
         }
 
         function resetOnboarding() { showView('onboarding-view'); }
