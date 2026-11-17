@@ -256,7 +256,8 @@
             };
 
             try {
-                const res = await fetch(`${VERCEL_BASE_URL}/api/generate-plan`, {
+                // เอา /api ออก เพื่อให้ยิงตรงเข้า index.py ที่อยู่ข้างนอกสุด
+                const res = await fetch(`${VERCEL_BASE_URL}/generate-plan`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -341,7 +342,94 @@
             const profileContext = `ชื่อ: ${userPlanData.nickname}, เป้าหมาย: ${userPlanData.target_uni}, MBTI: ${userPlanData.mbti}`;
 
             try {
-                const res = await fetch(`${VERCEL_BASE_URL}/api/chat`, {
+                 // เอา /api ออก เพื่อให้ยิงตรงเข้า index.py ที่อยู่ข้างนอกสุด
+                const res = await fetch(`${VERCEL_BASE_URL}/generate-plan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const aiData = await res.json();
+
+                const newPlan = {
+                    user_id: currentUser.id,
+                    nickname: payload.nickname,
+                    target_uni: payload.target_uni,
+                    mbti: payload.mbti,
+                    psych_summary: aiData.psych_summary,
+                    long_term_plan: aiData.long_term_plan,
+                    daily_tasks: aiData.daily_tasks
+                };
+
+                await supabaseClient.from('user_plans').upsert(newPlan);
+                userPlanData = newPlan;
+                renderDashboard();
+                showView('dashboard-view');
+            } catch (err) {
+                alert("เกิดข้อผิดพลาด: " + err.message);
+            } finally {
+                btn.innerText = "✨ ให้ SAGE วิเคราะห์และสร้างแผนการเรียน";
+                btn.disabled = false;
+            }
+        }
+
+        function resetOnboarding() { showView('onboarding-view'); }
+
+        function renderDashboard() {
+            document.getElementById('display-nickname').innerText = userPlanData.nickname || 'คุณ';
+            document.getElementById('display-psych').innerText = userPlanData.psych_summary || '';
+            document.getElementById('display-target').innerText = userPlanData.target_uni || 'เป้าหมาย';
+            document.getElementById('long-term-content').innerHTML = userPlanData.long_term_plan.replace(/\*\*(.*?)\*\*/g, '<b class="text-slate-900">$1</b>').replace(/\n/g, '<br>');
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const listEl = document.getElementById('daily-tasks-list');
+            const tasks = userPlanData.daily_tasks || [];
+            listEl.innerHTML = '';
+            tasks.forEach((t, idx) => {
+                listEl.innerHTML += `
+                    <label class="flex items-start gap-3 p-4 bg-white border border-slate-200/80 rounded-xl cursor-pointer shadow-xs">
+                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${idx})" class="mt-1 w-4 h-4 accent-blue-900">
+                        <div class="flex-1">
+                            <p class="font-medium text-xs md:text-sm ${t.done ? 'line-through text-slate-400' : 'text-slate-800'}">${t.task}</p>
+                            <p class="text-[11px] text-slate-400 mt-1">⏱️ ${t.time} • <span class="text-blue-700">${t.tip}</span></p>
+                        </div>
+                    </label>
+                `;
+            });
+            document.getElementById('task-progress').innerText = `${tasks.filter(t => t.done).length}/${tasks.length} สำเร็จ`;
+        }
+
+        async function toggleTask(index) {
+            userPlanData.daily_tasks[index].done = !userPlanData.daily_tasks[index].done;
+            renderTasks();
+            await supabaseClient.from('user_plans').update({ daily_tasks: userPlanData.daily_tasks }).eq('user_id', currentUser.id);
+        }
+
+        function switchTab(tabName) {
+            ['daily', 'longterm', 'chat'].forEach(name => {
+                document.getElementById(`tab-${name}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${name}`).className = "py-2 px-3 rounded-xl text-xs md:text-sm font-medium text-slate-600 hover:text-slate-900 transition";
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabName}`).className = "py-2 px-3 rounded-xl text-xs md:text-sm font-medium bg-white text-blue-900 shadow-xs transition";
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            const text = input.value.trim();
+            if (!text) return;
+
+            chatBox.innerHTML += `<div class="flex justify-end"><div class="bg-blue-900 text-white p-3.5 rounded-2xl rounded-tr-none max-w-[85%]">${text}</div></div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const profileContext = `ชื่อ: ${userPlanData.nickname}, เป้าหมาย: ${userPlanData.target_uni}, MBTI: ${userPlanData.mbti}`;
+
+            try {
+                // เอา /api ออก เพื่อให้ยิงตรงเข้า index.py ที่อยู่ข้างนอกสุด
+                const res = await fetch(`${VERCEL_BASE_URL}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: text, profile_context: profileContext, history: chatHistory })
