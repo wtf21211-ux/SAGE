@@ -7,7 +7,6 @@ from pydantic import BaseModel
 import os
 import json
 
-# สร้างตัวแปร app ให้ตรงตามมาตรฐานที่ Vercel มองหา
 app = FastAPI()
 
 app.add_middleware(
@@ -37,6 +36,8 @@ class ChatRequest(BaseModel):
     profile_context: str = ""
     history: list = []
 
+# รองรับทั้งแบบมี /api และไม่มี /api ป้องกันพังซ้ำซ้อน
+@app.post("/generate-plan")
 @app.post("/api/generate-plan")
 def generate_initial_plan(req: OnboardingRequest):
     current_time = get_thai_time()
@@ -78,6 +79,7 @@ def generate_initial_plan(req: OnboardingRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/chat")
 @app.post("/api/chat")
 def chat_with_sage(req: ChatRequest):
     current_time = get_thai_time()
